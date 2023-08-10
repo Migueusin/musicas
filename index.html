@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preferências de Música</title>
+    <!-- Adicione a biblioteca do Firebase e do Chart.js -->
+    <script src="https://www.gstatic.com/firebasejs/8.3.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.3.1/firebase-firestore.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+
+</head>
+<body>
+    <h1>Preferências de Música</h1>
+    <form id="meuFormulario">
+        <label for="nome"> Nome:</label>
+        <input type="text" id="nome" name="nome" required>
+        <label for="estilos"> Estilo de música preferido:</label>
+        <input type="text" id="estilos" name="estilos" required>
+        <button type="submit">Salvar</button>
+    </form>
+    
+    <!-- Gráfico para exibir as preferências de música -->
+    <canvas id="graficoPreferencias" width="400" height="200"></canvas>
+
+    <script>
+        // Configurar as credenciais do Firebase
+        var firebaseConfig = {
+            apiKey: "AIzaSyCr2r7_R5T7xO1ZBfs5z6RDMiPl2FOvoME",
+            authDomain: "musica-6dac5.firebaseapp.com",
+            projectId: "musica-6dac5"
+        };
+        // Inicializar o Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Referenciar o Firestore
+        var db = firebase.firestore();
+
+        // Capturar o formulário e salvar preferências no Firestore ao enviá-las
+        document.getElementById("meuFormulario").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            var nome = document.getElementById("nome").value;
+            var estilosStr = document.getElementById("estilos").value;
+            var estilos = estilosStr.split(",").map(style => style.trim()); // Separar estilos por vírgula
+
+            // Salvar as preferências na coleção "preferencias"
+            db.collection("preferencias").add({
+                nome: nome,
+                estilos: estilos
+            })
+            .then(function (docRef) {
+                console.log("Preferências salvas com ID: ", docRef.id);
+                alert("Preferências salvas com sucesso!");
+                // Limpar os campos do formulário após salvar as preferências
+                document.getElementById("meuFormulario").reset();
+            })
+            .catch(function (error) {
+                console.error("Erro ao salvar preferências: ", error);
+                alert("Ocorreu um erro ao salvar as preferências. Por favor, tente novamente.");
+            });
+        });
+
+        // Consultar as preferências no Firestore e criar um gráfico
+        db.collection("preferencias").get().then(function(querySnapshot) {
+            var estiloCounts = {};
+
+            querySnapshot.forEach(function(doc) {
+                var dados = doc.data();
+                dados.estilos.forEach(function(estilo) {
+                    if (estiloCounts[estilo]) {
+                        estiloCounts[estilo]++;
+                    } else {
+                        estiloCounts[estilo] = 1;
+                    }
+                });
+            });
+
+            var graficoCanvas = document.getElementById("graficoPreferencias").getContext("2d");
+            var grafico = new Chart(graficoCanvas, {
+                type: "bar",
+                data: {
+                    labels: Object.keys(estiloCounts),
+                    datasets: [{
+                        label: "Preferências de Música",
+                        data: Object.values(estiloCounts),
+                        backgroundColor: "rgba(75, 192, 192, 0.2)",
+                        borderColor: "rgba(75, 192, 192, 1)",
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
